@@ -14,11 +14,10 @@ class QuizError(Exception):
 LETTERS = "ABCD"
 
 # Default and fallback models
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
-FALLBACK_MODELS = [
-    "gemini-3.5-flash-lite"
-]
+# Add verified fallback model IDs here if needed.
+FALLBACK_MODELS = []
 
 BUSY_CODES = (500, 502, 503, 504)
 
@@ -318,6 +317,20 @@ def generate_offline(processed, n):
     return questions
 
 
+def get_setting(name, default=""):
+    """Read settings from Streamlit Secrets or local environment variables."""
+    try:
+        import streamlit as st
+        value = st.secrets.get(name, default)
+        if value:
+            return str(value)
+    except Exception:
+        # Streamlit Secrets may be unavailable during local/non-Streamlit runs.
+        pass
+
+    return os.getenv(name, default)
+
+
 def generate_quiz(
     content,
     processed,
@@ -330,13 +343,12 @@ def generate_quiz(
 
     is_topic = len(content.split()) < 15
 
-    api_key = (
-        api_key or os.getenv("GEMINI_API_KEY", "")
+    api_key = str(
+        api_key or get_setting("GEMINI_API_KEY", "")
     ).strip()
 
-    # Correctly initialize the model inside the function.
-    selected_model = (
-        model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    selected_model = str(
+        model or get_setting("GEMINI_MODEL", DEFAULT_MODEL)
     ).strip()
 
     if not selected_model:
